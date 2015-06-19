@@ -2,7 +2,7 @@
 
 #<a href="{{site.baseurl}}" id="home">JSALT MT-Lab</a>
 
-## July 3, 2015
+## July 2, 2015
 
  * [Instructions](index.html)
  * [Leaderboard](leaderboard.html)

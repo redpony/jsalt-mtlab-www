@@ -4,28 +4,25 @@ title: JSALT Lab - Predicting Inflections in Translation
 ---
 # Predicting Inflections in Translation
 
-**Due 11:59pm on Tuesday, April 21, 2015**
+In many models of machine translation, translations of sentences and documents are modeled as sequences of translations of words or other small phrases. In this competitive laboratory exercise, you will learn about machine translation by developing models of how English words—in context—translate into [Czech](https://en.wikipedia.org/?title=Czech_language). In particular, the focus of this exercise is to build models to learn from example translations to choose among different inflections of words based on the English language context.
 
-In machine translation, the decoder makes use of a **phrase table** which contains translations of phrases in the source language into the target language, along with **scores** that give information about how probable or "good" the translation option is likely to be. For example, in an English–Czech MT system, the phrase table might tell us that there are two translations for the English word *bank* into Czech: *banka* and *břeh* (corresponding to the financial institution sense and river bank sense, respectively), with translation probabilities $p(\text{banka} \mid \text{bank}) = 0.8$ and $p(\text{břeh} \mid \text{bank}) = 0.2$.  These probabilities are usually assumed to be the relative frequencies with which each source phrase was translated into each target phrase in the parallel corpus used to train the translation model.
+To illustrate the problem you will be asked to solve, consider the following two English sentences.
 
-Let us consider the problem of translating the following two English sentences into Czech:
-
-<center>i went to the <b>bank</b> to deposit my paycheck .</center>
+<center>The <b>cat</b> chased John .</center>
 <br />
 
-<center>the log rolled down the <b>bank</b> and into the water .</center>
+<center>John chased the <b>cat</b> .</center>
 <br />
 
-Upon looking at these two input sentences, however, we might want to rethink the appropriateness of using context-independent relative frequencies to estimate the translation probabilities.
-In the former sentence, the correction translation of "bank" is seems likely to be <i>banka</i> (financial institution), just like our example phrase table predicts.
-In the latter, however, it's more likely to be <i>břeh</i> (river bank) despite the translation table probabilities.
-This idea was first described in [Carpuat and Wu (2007)](http://www.cs.ust.hk/~marine/papers/CarpuatWu_EMNLP2007.pdf), but has only recently risen to prominence.
+Whereas English uses word order and syntactic structure to express the different grammatical roles that <i>cat</i> participates in, Czech uses morphology to express the same idea. Thus, the two sentences may be translated, respectively, as:
 
-**In this homework, your task is to use the *context* in the source sentence to rerank the translation options of the highlighted word.**
+<center>TODO.</center>
+<br />
 
-This assignment will be graded by <i>mean reciprocol rank</i> (MRR), which captures the intuition that we want the "correct" translation (as determined by a reference sentence translation) to be highly ranked, even if it is not first in the reranked list.
-If the reference is the $n$th item in your reranked list, you will recieve a score of $\frac{1}{n}$ for that sentence.
-Your score is then averaged across all sentences in the test set, yielding a number between 0 (bad) and 1 (good).
+<center>TODO.</center>
+<br /> 
+
+**In this assignment, your task is to learn to predict the most likely translation of an English source word in context from among a set of inflected Czech words.** To do so, we will provide example translations that you can use to learn from. You will be able to submit outputs from your system and compete with the other participants of this lab for **fortune and glory**.
 
 ## Getting started
 
