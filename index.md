@@ -1,39 +1,26 @@
 ---
 layout: default
-title: JSALT Lab - Predicting Inflections in Translation
+title: JSALT Lab - Predicting Inflection in Translation
 ---
-# Predicting Inflections in Translation
+# Predicting Inflection in Translation
 
-In many models of machine translation, translations of sentences and documents are modeled as sequences of translations of words or other small phrases. In this competitive laboratory exercise, you will learn about machine translation by developing models of how English words—in context—translate into [Czech](https://en.wikipedia.org/?title=Czech_language). In particular, the focus of this exercise is to build models to learn from example translations to choose among different inflections of words based on the English language context.
+In many models of machine translation, translations of sentences and documents are modeled as sequences of translations of words or other small phrases. In this laboratory exercise, you will learn some of the central ideas in machine translation by developing models of how individual English words—in the context of a sentence—translate into [Czech](https://en.wikipedia.org/?title=Czech_language). Czech is a morphologically rich language which uses [inflection](https://en.wikipedia.org/?title=Inflection) to express many of the grammatical relations that English expresses using word order, syntactic structure, and function words. To illustrate this phenomenon consider how the following two sentences are translated into Czech:
 
-To illustrate the problem you will be asked to solve, consider the following two English sentences.
+ * [Fred](https://en.wikipedia.org/wiki/Frederick_Jelinek) chased the <b>cat</b> .
+ * The <b>cat</b> chased Fred .
 
-<center>The <b>cat</b> chased John .</center>
-<br />
+Where English uses word order to distinguish the role *cat* plays in the two sentences, Czech uses inflection to express the same contrast:
 
-<center>John chased the <b>cat</b> .</center>
-<br />
+ * Fred honil <b>kočku</b> . (*kočku* is the object)
+ * Freda honila <b>kočka</b> . (*kočka* is the subject)
 
-Whereas English uses word order and syntactic structure to express the different grammatical roles that <i>cat</i> participates in, Czech uses morphology to express the same idea. Thus, the two sentences may be translated, respectively, as:
+In this exercise, you will **learn a model from example translations to predict the most appropriate inflected form of a Czech translation given an English source word and its context.** This is, of course, only a small part of translation: we are not considering the problem of choosing the correct stem, nor are we composing words into sentences, but the central ideas of learning from example translations to generalize to how words are likely to translate in unseen test data is the fundamental concept in statistical approaches to machine translation.
 
-<center>TODO.</center>
-<br />
-
-<center>TODO.</center>
-<br /> 
-
-**In this assignment, your task is to learn to predict the most likely translation of an English source word in context from among a set of inflected Czech words.** To do so, we will provide example translations that you can use to learn from. You will be able to submit outputs from your system and compete with the other participants of this lab for **fortune and glory**.
+To help you get started, we provide you with instructions for implementing a classification model based on a [multilayer perceptron](http://deeplearning.net/tutorial/mlp.html), but the purpose of this assignment is to let you be creative in solving this problem, and you are encouraged to try out lots of different ideas. To make things fun, you will be able to submit your system's predictions on a test set and compete with the other lab participants. At the end of the lab period, we will give prizes for the best performing systems!
 
 ## Getting started
 
-Go to your clone of your course GitHub repository on the machine where you will be doing this assignment, and run the following command to obain the code and data you will need:
-
-    ./tools/get-new-assignments
-
-We have provided you with a trivial ranking algorithm that simply sorts the translation candidate list by $p(e \mid f)$.
-You will additionally be given several hundred thousand parallel Czech–English sentences along with some training data extracted therefrom.
-For convenience (and to inspire you!), we also provide dependency parses and POS tags for each input sentence in training, dev, and test sets.
-
+ * Download [code and data](http://demo.clab.cs.cmu.edu/www/jsalt-mt-lab.tar.gz) you will need to get started with this assignment.
 
 ### Provided data
 
