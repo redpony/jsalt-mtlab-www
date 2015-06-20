@@ -16,7 +16,7 @@ Where English uses word order to distinguish the role *cat* plays in the two sen
 
 In this exercise, you will **learn a model from example translations to predict the most appropriate inflected form of a Czech translation given an English source word and its context.** This is, of course, only a small part of translation: we are not considering the problem of choosing the correct stem, nor are we composing words into sentences, but the central ideas of learning from example translations to generalize to how words are likely to translate in unseen test data is the fundamental concept in statistical approaches to machine translation.
 
-To help you get started, we provide you with instructions for implementing a classification model based on a [multilayer perceptron](http://deeplearning.net/tutorial/mlp.html), but the purpose of this assignment is to let you be creative in solving this problem, and you are encouraged to try out lots of different ideas. To make things fun, you will be able to submit your system's predictions on a test set and compete with the other lab participants. At the end of the lab period, we will give prizes for the best performing systems!
+To help you get started, we provide you with instructions for implementing a classification model based on a [multilayer perceptron](http://deeplearning.net/tutorial/mlp.html), but the purpose of this assignment is to let you be creative in solving this problem, and you are encouraged to try out lots of different ideas (we list some suggestions below). To make things fun, you will be able to submit your system's predictions on a test set and compete with the other lab participants. At the end of the lab period, we will give prizes for the best performing systems!
 
 ## Getting started
 
