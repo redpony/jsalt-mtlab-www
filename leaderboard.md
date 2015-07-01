@@ -16,10 +16,14 @@ This page contains the leaderboard which will you show you how well you are doin
         Rank
       </th>
       <th>
-        Handle
+        <a href="javascript:;" onclick="resort(0, 0); drawLeaderboard(); return false">Team Name</a>
       </th>
       <th valign="top">
-        <a href="javascript:;" onclick="resort(1, 0); drawLeaderboard(); return false">Accuracy</a><br/>
+        <a href="javascript:;" onclick="resort(2, 0); resort(1, 1); drawLeaderboard(); return false">Failures</a><br/>
+        <span class="small"></span>
+      </th>
+      <th valign="top">
+        <a href="javascript:;" onclick="resort(1, 1); resort(2, 0); drawLeaderboard(); return false">Model Score</a><br/>
         <span class="small"></span>
       </th>
     </tr>

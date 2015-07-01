@@ -48,7 +48,7 @@ function drawLeaderboard() {
   }
   var currentRank = 1;
   for (var userIndex = 0; userIndex < arrayToSort.length; userIndex++) {
-      var userArray = arrayToSort[userIndex];
+      var userArray = arrayToSort[userIndex]; 
       var user = userArray[0];
       var state = "";
       var trEl = document.createElement("tr");
@@ -87,5 +87,6 @@ function drawLeaderboard() {
   }
 }
 
-resort(4, 0);
+resort(2, 0);
+resort(1, 1);
 drawLeaderboard();

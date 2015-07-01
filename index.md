@@ -1,114 +1,94 @@
 ---
 layout: default
-title: JSALT Lab - Predicting Inflection in Translation
+title: JSALT Lab - Decoding for Machine Translation
 ---
-# Predicting Inflection in Translation
+# Decoding for Machine Translation
 
-In many models of machine translation, translations of sentences and documents are modeled as sequences of translations of words or other small phrases. In this laboratory exercise, you will learn some of the central ideas in machine translation by developing models of how individual English words—in the context of a sentence—translate into [Czech](https://en.wikipedia.org/?title=Czech_language). Czech is a morphologically rich language which uses [inflection](https://en.wikipedia.org/?title=Inflection) to express many of the grammatical relations that English expresses using word order, syntactic structure, and function words. To illustrate this phenomenon consider how the following two sentences are translated into Czech:
+Decoding is the problem of taking an input sentence in a foreign language:
 
- * [Fred](https://en.wikipedia.org/wiki/Frederick_Jelinek) chased the <b>cat</b> .
- * The <b>cat</b> chased Fred .
+<center><i>claramente , es preferible la segunda opción</i></center>
+<br />
 
-Where English uses word order to distinguish the role *cat* plays in the two sentences, Czech uses inflection to express the same contrast:
+and finding the best translation into a target language, according to a model:
 
- * Fred honil <b>kočku</b> . (*kočku* is the object)
- * Freda honila <b>kočka</b> . (*kočka* is the subject)
+<center><i>clearly , the second option is preferable</i></center>
+<br />
 
-In this exercise, you will **learn a model from example translations to predict the most appropriate inflected form of a Czech translation given an English source word and its context.** This is, of course, only a small part of translation: we are not considering the problem of choosing the correct stem, nor are we composing words into sentences, but the central ideas of learning from example translations to generalize to how words are likely to translate in unseen test data is the fundamental concept in statistical approaches to machine translation.
-
-To help you get started, we provide you with instructions for implementing a classification model based on a [multilayer perceptron](http://deeplearning.net/tutorial/mlp.html), but the purpose of this assignment is to let you be creative in solving this problem, and you are encouraged to try out lots of different ideas (we list some suggestions below). To make things fun, you will be able to submit your system's predictions on a test set and compete with the other lab participants. At the end of the lab period, we will give prizes for the best performing systems!
+**Your task is to find the most probable translation, given the Spanish input, the translation likelihood model, and the English language model.** We assume the traditional noisy channel decomposition:
+$$\begin{align\*}
+\textbf{e}^* &= \arg \max_{\textbf{e}} p(\textbf{e} \mid \textbf{f}) \\\\
+ &= \arg \max_{\textbf{e}} \frac{p_{\textrm{TM}}(\textbf{f} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e})}{p(\textbf{f})} \\\\
+ &= \arg \max_{\textbf{e}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \\\\
+ &= \arg \max_{\textbf{e}} \sum_{\textbf{a}} p_{\textrm{TM}}(\textbf{f},\textbf{a} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \end{align\*}$$
+We also assume that the distribution over all segmentations and all alignments is *uniform*. This means that there is **no** distortion model or segmentation model. You will not be evaluated on translation quality, BLEU score, or human correlation, but simply on how well you execute the above search. The higher the probability of the translation you find, the better.
 
 ## Getting started
 
- * Download [code and data](http://demo.clab.cs.cmu.edu/www/jsalt-mt-lab.tar.gz) you will need to get started with this assignment.
+To get started with this lab, download the required data and code <a href="mtlab.tgz">tarball</a> or <a href="mtlab.zip">zip file</a>.
+We have provided you with a simple greedy word-base decoder written in Python, along with a 3-gram English language model, an English-Spanish
+phrase-based translation model, and some Spanish input sentences.
 
-### Provided data
+You can try running the included decoder by running the command
+<span style="font-family: Courier New, Courier, monospace">python decode.py > output.txt</span>.
+Take a look at the generated output and you will notice that while some of the right words appear the translation quality is rather poor.
+We can quantify this using the included <span style="font-family: Courier New, Courier, monospace">grade.py</span> script by using the command
+<span style="font-family: Courier New, Courier, monospace">cat output.txt | python grade.py</span>. The grading script returns two numbers. The first is
+a score, which represents the log probability of your 55 generated English sentences given the 55 Spanish sentences. The second is the number of sentences
+that were unable to be decoded (see below). The default decoder&apos;s output should score $-11417.136226$ and $4$ respectively.
 
-We are providing you with training, development, and blind test datasets consisting of tuples $(x,c,y^\*)$ of an English source phrase ($x$), the English sentential context ($c$), and a Czech reference translation of the English source phrase ($y^\*$). You will also be provided with an English–Czech phrase table ($\mathscr{Y}$) which is guaranteed to contain the English source phrase and the Czech target phrase for every tuple we provide (of course, in a real system, you would need to deal with OOV words at test time).
+The simple decoder solves the search problem, but makes several major assumptions. First, it assumes that each Spanish word translates independently of the rest of the input sentence.
+This means that the decoder fails to capture language phenomena such as words with multiple meanings, subject-verb agreement, or any sort of idiomatic usage.
 
-At test time, you will be given a new set of tuples $(x, c)$ and asked to predict, for each of these, the corresponding $y$ from among all the translation options for $x$ that you find in the provided phrase table (we denote the set of translation options as $\mathscr{Y}(x)$).
+Second, the provided decoder does not do any reordering of words in the target language. Therefore it is unable, for example, to correctly switch the order of the noun-adjective pairs in the Spanish input sentences.
 
-## Data Formats
+Third, some words in the input sentences do not have simple one-to-one translations in the provided model, yet they may be translatable as part of larger phrases. The provided decoder will fail to produce output on such sentences at all!
 
-Training, dev, and test sets are all given in the same file format.
-Each line will contain one training sentence split into three parts using a triple pipe ("|||") as the delimiter.
-The first part is the <i>left context</i>, the middle part is the phrase of interest, whose Czech translation we wish to predict, and the third is the <i>right context</i>.
-For example:
-<center>there are ten countries  |||  along  |||  this river .</center>
+## Step 1 -- Incorporating a language model
 
-Here "along" is the word we wish to translate into Czech. The reference translations are given in a corresponding file. For this example, the correct translation is <i>podél</i>.
+We can improve the translation quality of this simple decoder by using a language model to ensure fluency of the output English sentence.
+This has the additional effect of indirectly allowing input Spanish words to influence the translation of other nearby words.
 
-## Baseline
+One way to accomplish language model integration is by running the Viterbi algorithm on a carefully crafted graph structure described below.
+Each state in the graph is labeled by a tuple $(i, c)$, where $i$ is the number of words translated so far and $c$ is the state of the language model, and itself
+a tuple representing the last (up to) two words of the English translation. The initial state is thus $(0, (\text{&quot;&lt;s&gt;&quot;}))$.
 
-The baseline you must implement (or beat) is a linear model that assigns a score to each phrase translation in the phrase table for a source language phrase *in the context of a full sentence*. That is, the baseline model assigns a score to a translation option in a source language context as $\textit{score}(x,c,y) = \mathbf{f}(x,c,y) \cdot \mathbf{w}$. For the baseline model, you are required to do two things: (i) engineer the feature functions $\mathbf{f}(x,c,y)$ (we discuss the required features below) and (ii) learn the weight vector $\mathbf{w}$ from a corpus of a training examples which pair the sources phrases ($x$) and contexts ($c$) with a correct translation ($y^\*$).
+<figure>
+<img src="graph.png" alt="An example translation graph" width="70%" height="70%" />
+<figcaption>Figure 1 &mdash; An example translation graph</figcaption>
+</figure>
 
-If the training data we provided had "reference scores", we could use linear regression to solve this problem. However, all we know is what translation was used in various different contexts (and of course, what other translations the model could have used—the phrase table). Therefore, to estimate the parameters of the scoring function, we will optimize the following **pairwise ranking loss**:
+Edges are added by looking up each source word $s_i$ ($i \in \[0, N\]$ where $N$ is the number of words in the source sentence) in the translation table.
+For each translation $e_j$ add an arc from each state $(i, c)$ to $(i + 1, c')$, where $c'$ is the last two words of the string $c$ concatenated with $e_j$. Note that $e_j$
+may be more than one word! The weight of each arc will be the sum of log probability from the translation model and the log probability from the language model.
 
-$$\begin{align\*}
-\mathscr{L}(x, c, y^\*) &= \sum_{y^- \in \mathscr{Y}(x) \setminus y^\*} \max(0, \gamma - \textit{score}(x, c, y^\*) + \textit{score}(x, c, y^-)) \\\\
- &= \sum_{y^- \in \mathscr{Y}(x) \setminus y^\*} \max(0, \gamma - \mathbf{f}(x, c, y^\*) \cdot \mathbf{w} + \mathbf{f}(x, c, y^-) \cdot \mathbf{w}) \\\\
-  &= \sum_{y^- \in \mathscr{Y}(x) \setminus y^\*} \max(0, \gamma - (\mathbf{f}(x, c, y^\*) - \mathbf{f}(x, c, y^-)) \cdot \mathbf{w}) \\\\
-\end{align\*}$$
+<figure>
+<img src="probs.png" alt="Computation of edge weights" width="70%" height="70%" />
+<figcaption>Figure 2 &mdash; Computation of edge weights</figcaption>
+</figure>
 
-where $\mathbf{f}(x, c, y^\*)$ is a function that takes a source phrase, context, and translation hypothesis and returns a vector of real-valued features and $w$ is a weight vector to be learned from training data. Here $\mathscr{L}(x, c, y^\*)$ is <i>per-instance</i> loss, which should be summed over all training instances to calculate the <i>total corpus loss</i>.
+In addition, we will add one extra pseudo-word &quot;&lt;/s&gt;&quot; to the end of our input sentence, and a corresponding final state to the end of the graph.
+Thus the final state of the graph will be $(N + 1, c_{end})$ where $c_end$ is a tuple that ends with &quot;&lt;/s&gt;&quot;, and each
+state $(N, c)$ will transition to $(N + 1, c_{end})$. Since &quot;&lt;/s&gt;&quot; always translates itself, the log translation probability for these
+final edges will be zero, so their total weight will be $0 + \log p_{\textrm{LM}}(\text{&lt;/s&gt;} \mid c)$.
 
-Intuitively, what this objective says is that the score of the right translation ($y^\*$) of $x$ in context $c$ needs to be higher than the score of all the other translations (the $y^-$) of $x$, by a margin of at least $\gamma$ (you can pick any number greater than 0 for $\gamma$; however note that if you set it to 0, there would be a degenerate solution which set $\mathbf{w}=0$ which would not be a very useful model). Thus, if ranks the wrong translation in context higher than the right translation, or if it picks the right answer, but its score is too close to that of the wrong answer, you will suffer a penalty.
+## Step 2 -- Translating entire phrases
+Now we will seek to generalize our <i>word-to-word</i> translator with a <i>phrase-to-phrase</i> one. Modify the graph you built to encorporate phrase translations as follows.
+Look up each span $s_{i:j}$ in the translation table. For each of the possible translations, add an arc from each state $(i, c)$ to the state $(j, c')$ with the appropriate
+edge weight.
 
-Your learner should optimize this objective function using stochastic subgradient descent. That is, you should iteratively perform the update
+## Step 3 -- Local Reordering
+Next, expand your decoder to allow for the swapping of adjacent phrase pairs. To do this, modify your graph states so instead of simply storing how many words have been translated so far, they instead store a <i>coverage vector</i> $v$ &mdash; an array of booleans with the same length of the input sentence such that $v_i$ is true if the $i$th word has been translated and false if the $i$th word has yet to be translated. Now when adding edges to your graph, before adding an arc that covers input span $\[i,j)$, first check that $v_{i:j}$ is all false &mdash; that is to say that all the word in the span $\[i,j)$ have not yet been translated.
 
-$$\mathbf{w}_{(i+1)} = \mathbf{w}_{(i)} - \alpha \cdot \frac{\partial \mathscr{L}(x, c, y^\*)}{\partial \mathbf{w}}$$
+## Step 4 -- Global reordering
+In the previous step you implemented a decoder that allowed phrase pairs to move one &quot;slot&quot; to the right or left. Now consider what happens if we allow phrases to move two slots in either direction. How about three? Four? $n$? We call the maximum distance a phrase can move the <i>distortion limit</i>. As the disortion limit grows, the complexity of the tanslation graph grows factorially. To ensure that we still get translations in a reasonable time, many decoders use <i>beam search</i> to find the most likely translations.
 
-where $\alpha$ is some learning rate (the optimal value of the learning rate will depend on the features you use, but usually a value of 0.1 or 0.01 work well).
+To implement beam search, <b>TO DO</b>... 
 
-Despite all the notation, the stochastic subgradient descent algorithm for this model is very simple: you will loop over all $(x,c,y^\*)$ tuples in the training data, and for each of these you will loop over all of the possible wrong answers (the $\mathscr{Y}(x) \setminus y^\*$), you will then compute the following quantity:
+## Submitting your output
+ * You may upload your best output at any time by visiting the <a href="upload.html">Submit Output</a> page.
+ * Your group&apos;s score will be shown on the <a href="leaderboard.html">leaderboard</a> under your team pseudonym.
+ * Uploaded output is graded approximately once a minute, so please allow some time after uploading.
 
-$$\begin{align\*}
-\mathscr{L}(x,c,y^\*) = \max(0, \gamma - (\mathbf{f}(x, c, y^\*) - \mathbf{f}(x, c, y^-)) \cdot \mathbf{w})
-\end{align\*}$$
+## Acknowledgements
 
-If you get 0, your model is doing the right thing on this example. If you compute any non-zero score, you need to update the weights by following the direction of steepest descent, which is given by the derivative of $\gamma - (\mathbf{f}(x, c, y^\*) - \mathbf{f}(x, c, y^-)) \cdot \mathbf{w}$ with respect to $\mathbf{w}$. Fortunately, this expression is very simple to differentiate: it is just a constant value plus a dot product, and the derivative of $c + \mathbf{a}\cdot\mathbf{b}$ with respect to $\mathbf{b}$ is just $\mathbf{a}$, so the derivative you need to compute is simply
-$$\begin{align\*}
-\frac{\partial \mathscr{L}(x, c, y^\*)}{\partial \mathbf{w}} = \mathbf{f}(x, c, y^\*) - \mathbf{f}(x, c, y^-)
-\end{align\*}$$
-
-The baseline set of features you are to implement is a set of <i>sparse</i> features following two feature templates, along with the four features provided for each phrase in the phrase table:
-
- * The four default phrase table features are the logs of the following four quantities: $p(e|f)$, $p(f|e)$, $p_{lex}(e|f)$, $p_{lex}(f|e)$.
- * A binary feature that conjoins (i) the source word, (ii) the hypothesis translation, and (iii) the previous word in the target sentence. Written as a string, a feature might be `src:bank_tgt:banka_prev:the`, and it would have a value of 1.
- * A binary feature that conjoins (i) the source word, (ii) the hypothesis translation, and (iii) the next word in the source sentence. An example feature string might look like `src:bank_tgt:banka_next:the`, and it would have a value of 1.
-
-Note that this feature set is very sparse, yielding thousands of individual features. If you use Python, we recommend that you make use of `scipy.sparse.csr_matrix` to represent your feature vectors. There are equivalent sparse vector data types in almost every programming language.
-
-To earn 7 points on this assignment, you must **implement a the described learning algorithm using the above features**
- so that it is capable of predicting which Czech translation of a highlighted source phrase is most likely given its context.
-
-## Default model
-
-To help get you started, we are providing a default model that four important features, $\log p(e|f)$, $\log p(f|e)$, $\log p_{lex}(e|f)$, and $\log p_{lex}(f|e)$. Furthermore, it uses the simple weight vector $(1\;0\;0\;0)$. Therefore it always simply sorts the candidates by $p(e \mid f)$. Thus, the default model is not sensitive to context.
-
-## The Challenge
-
-As discussed above, our baseline reranker simply sorts the candidates by $p(e|f)$. In our simple "bank" example, it would always then suggest <i>banka</i> over <i>břeh</i>.
-
-Here are some ideas:
-
- * Add $\ell_1$ or $\ell_2$ regularization to prevent the learner from assigning too much importance to rare features.
- * Use convolutional neural networks to automatically learn to discriminate translations from context ([paper](http://arxiv.org/pdf/1503.02357v1.pdf))
- * Leverage dependency and POS information to predict case ([paper](http://aclweb.org/anthology/D/D13/D13-1174.pdf))
- * Use lexical context and syntactic information ([paper](https://aclweb.org/anthology/W/W08/W08-0302.pdf))
- * Learn bilingual word vectors from [parallel data]({{site.baseurl}}/parallel.encs) ([paper](http://www.cs.cmu.edu/~mfaruqui/papers/eacl14-vectors.pdf))
-
-## Ground Rules
-
- * You may work in independently or in groups of any size, under these conditions:
-    * You must notify us by posting a public note to piazza including the e-mails of everyone who will be working in the group (max=3).
-    * Everyone in the group will receive the same grade on the assignment.
-    * Once you have formed a group, you may **not** disband until the next homework.
-
- * You must turn in the following by submitting to the public GitHub repository
-    * `hw4/output.txt`
-    * `hw4/README.md` - a brief description of the algorithms you tried.
-    * `hw4/...` - your source code and revision history. We want to see evidence of *regular progress* over the course of the project. You don't have to `git push` to the public repository unless you want to, but you should be committing changes with `git add` and `git commit`. We expect to see evidence that you are trying things out and learning from what you see.
-
-You do not need any other data than what is provided. **You should feel free to use additional codebases and libraries. Nothing is off limits here -- the sky is the limit!**
-You may use other sources of data if you wish, provided that you notify the class via Piazza.
+This assignment has been done in the past in the course developed by [Adam Lopez, Chris Callison-Burch, and Matt Post](http://mt-class.org/hw2.html).
