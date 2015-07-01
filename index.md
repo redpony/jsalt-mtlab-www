@@ -14,39 +14,45 @@ and finding the best translation into a target language, according to a model:
 <center><i>clearly , the second option is preferable</i></center>
 <br />
 
-**Your task is to find the most probable translation, given the Spanish input, the translation likelihood model, and the English language model.** We assume the traditional noisy channel decomposition:
+**Your task is to implement a simple decoder, which attempts to find the most probable translation, given the Spanish input, the phrase-based translation likelihood model, and the English language model.** We assume the traditional noisy channel decomposition:
 $$\begin{align\*}
 \textbf{e}^* &= \arg \max_{\textbf{e}} p(\textbf{e} \mid \textbf{f}) \\\\
  &= \arg \max_{\textbf{e}} \frac{p_{\textrm{TM}}(\textbf{f} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e})}{p(\textbf{f})} \\\\
  &= \arg \max_{\textbf{e}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \\\\
- &= \arg \max_{\textbf{e}} \sum_{\textbf{a}} p_{\textrm{TM}}(\textbf{f},\textbf{a} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \end{align\*}$$
-We also assume that the distribution over all segmentations and all alignments is *uniform*. This means that there is **no** distortion model or segmentation model. You will not be evaluated on translation quality, BLEU score, or human correlation, but simply on how well you execute the above search. The higher the probability of the translation you find, the better.
+ &= \arg \max_{\textbf{e}} \sum_{\textbf{a}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{a},\textbf{e}) \times p_{\textrm{AM}}(\textbf{a} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \end{align\*} \\\\
+ &\approx \arg \max_{\textbf{e} \max_{\textbf{a}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{a},\textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \end{align\*}
+$$
+We make the additional assumption that the distribution over all segmentations and all alignments (AM) is *uniform*. This means that there is **no** distortion model or segmentation model. You will not be evaluated on translation quality, BLEU score, or human correlation, but simply on how well you execute the above search. Do not be surprised if you see cases where qualitatively better translations are assigned a lower probability than a qualitatively worse translation—the language model and translation models we are providing are imperfect!
 
 ## Getting started
 
 To get started with this lab, download the required data and code <a href="mtlab.tgz">tarball</a> or <a href="mtlab.zip">zip file</a>.
-We have provided you with a simple greedy word-base decoder written in Python, along with a 3-gram English language model, an English-Spanish
+We have provided you with a simple greedy word-base decoder written in Python, along with a 3-gram English language model, an English–Spanish
 phrase-based translation model, and some Spanish input sentences.
 
-You can try running the included decoder by running the command
-<span style="font-family: Courier New, Courier, monospace">python decode.py > output.txt</span>.
+You can try running the included decoder by running the following command.
+
+    python decode.py > output.txt
+
 Take a look at the generated output and you will notice that while some of the right words appear the translation quality is rather poor.
-We can quantify this using the included <span style="font-family: Courier New, Courier, monospace">grade.py</span> script by using the command
-<span style="font-family: Courier New, Courier, monospace">cat output.txt | python grade.py</span>. The grading script returns two numbers. The first is
-a score, which represents the log probability of your 55 generated English sentences given the 55 Spanish sentences. The second is the number of sentences
-that were unable to be decoded (see below). The default decoder&apos;s output should score $-11417.136226$ and $4$ respectively.
+We can quantify this using the included `grade.py` script by using the command:
 
-The simple decoder solves the search problem, but makes several major assumptions. First, it assumes that each Spanish word translates independently of the rest of the input sentence.
-This means that the decoder fails to capture language phenomena such as words with multiple meanings, subject-verb agreement, or any sort of idiomatic usage.
+    cat output.txt | python grade.py
 
-Second, the provided decoder does not do any reordering of words in the target language. Therefore it is unable, for example, to correctly switch the order of the noun-adjective pairs in the Spanish input sentences.
+The grading script returns two numbers. The first is a score, which represents the log probability of your 55 generated English sentences given the 55 Spanish sentences. The second is the number of sentences that were unable to be decoded (see below). The default decoder&apos;s output should score $-11501.120463$ and $4$ respectively.
 
-Third, some words in the input sentences do not have simple one-to-one translations in the provided model, yet they may be translatable as part of larger phrases. The provided decoder will fail to produce output on such sentences at all!
+The simple decoder solves the search problem, but makes several major assumptions:
+
+1. It assumes that each Spanish word translates independently of the rest of the input sentence decisions. This means that the decoder fails to capture language phenomena such as words with multiple meanings, subject-verb agreement, or any sort of idiomatic usage.
+2. It does not do any reordering of words in the target language. Therefore it is unable, for example, to correctly switch the order of the noun-adjective pairs in the Spanish input sentences.
+3. Finally, some words in the input sentences do not have simple one-to-one translations in the provided model, yet they may be translatable as part of larger phrases. The provided decoder will fail to produce output on such sentences at all!
+
+Your tasks will be to modify the provided code to address these shortcomings.
 
 ## Step 1 -- Incorporating a language model
 
 We can improve the translation quality of this simple decoder by using a language model to ensure fluency of the output English sentence.
-This has the additional effect of indirectly allowing input Spanish words to influence the translation of other nearby words.
+This has the additional effect of indirectly allowing input Spanish words to influence the translation of other nearby words. However, this makes the decoding problem much more complicated.
 
 One way to accomplish language model integration is by running the Viterbi algorithm on a carefully crafted graph structure described below.
 Each state in the graph is labeled by a tuple $(i, c)$, where $i$ is the number of words translated so far and $c$ is the state of the language model, and itself
