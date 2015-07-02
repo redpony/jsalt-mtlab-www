@@ -4,7 +4,7 @@ title: JSALT Lab - Predicting Inflection in Translation
 ---
 # Translation Output File Upload
 
-Please name your file *&lt;teamname&gt;*.txt
+Please name your file *&lt;teamcode&gt;*.txt
 
 <form action="upload.php" method="post" enctype="multipart/form-data">
     <input type="file" name="fileToUpload" id="fileToUpload" /> <br />
