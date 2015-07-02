@@ -19,8 +19,9 @@ $$\begin{align\*}
 \textbf{e}^* &= \arg \max_{\textbf{e}} p(\textbf{e} \mid \textbf{f}) \\\\
  &= \arg \max_{\textbf{e}} \frac{p_{\textrm{TM}}(\textbf{f} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e})}{p(\textbf{f})} \\\\
  &= \arg \max_{\textbf{e}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \\\\
- &= \arg \max_{\textbf{e}} \sum_{\textbf{a}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{a},\textbf{e}) \times p_{\textrm{AM}}(\textbf{a} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \end{align\*} \\\\
- &\approx \arg \max_{\textbf{e} \max_{\textbf{a}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{a},\textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \end{align\*}
+ &= \arg \max_{\textbf{e}} \sum_{\textbf{a}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{a},\textbf{e}) \times p_{\textrm{AM}}(\textbf{a} \mid \textbf{e}) \times p_{\textrm{LM}}(\textbf{e}) \\\\
+ &\approx \arg \max_{\textbf{e}} \max_{\textbf{a}} p_{\textrm{TM}}(\textbf{f} \mid \textbf{a},\textbf{e}) \times p_{\textrm{LM}}(\textbf{e})
+\end{align\*}
 $$
 We make the additional assumption that the distribution over all segmentations and all alignments (AM) is *uniform*. This means that there is **no** distortion model or segmentation model. You will not be evaluated on translation quality, BLEU score, or human correlation, but simply on how well you execute the above search. Do not be surprised if you see cases where qualitatively better translations are assigned a lower probability than a qualitatively worse translation—the language model and translation models we are providing are imperfect!
 
@@ -88,7 +89,16 @@ Next, expand your decoder to allow for the swapping of adjacent phrase pairs. To
 ## Step 4 -- Global reordering
 In the previous step you implemented a decoder that allowed phrase pairs to move one &quot;slot&quot; to the right or left. Now consider what happens if we allow phrases to move two slots in either direction. How about three? Four? $n$? We call the maximum distance a phrase can move the <i>distortion limit</i>. As the disortion limit grows, the complexity of the tanslation graph grows factorially. To ensure that we still get translations in a reasonable time, many decoders use <i>beam search</i> to find the most likely translations.
 
-To implement beam search, <b>TO DO</b>... 
+The most common implementation of beam search for machine translation is a <i>stack-based</i> decoding algorithm that works by incrementally building up hypothesis translations from left to right.
+Begin in the initial state as above, and explore all possible translations of a single phrase.
+Group the translations by the number of source words translated.
+(Each of these groups is called a &quot;stack&quot;, hence stack-based decoding).
+From each stack, discard all but the $k$ top-scoring hypotheses, where $k \in \mathbb{Z}$ is a parameter that controls the speed-accuracy tradeoff.
+Next, for each hypothesis in the &quot;one source word covered&quot; stack, repeat the procedure, considering all possible expansions of each of the (up to) $k$ items in that stack.
+Again, group hypotheses by number of source words, prune to the top $k$, then procede to the &quot;two words covered&quot; stack.
+Continue this procedure until you&squot;ve examined the $N$th stack where $N$ is the length of the input sentence, and return the best-scoring hypothesis from that stack. 
+
+This approach is the fundamental design that underpins modern machine translation decoders, such as <span style="font-family: Courier New, Courier, monospace;">moses</span>.
 
 ## Submitting your output
  * You may upload your best output at any time by visiting the <a href="upload.html">Submit Output</a> page.
