@@ -54,7 +54,7 @@ Your tasks will be to modify the provided code to address these shortcomings.
 We can improve the translation quality of this simple decoder by using a language model to ensure fluency of the output English sentence.
 This has the additional effect of indirectly allowing input Spanish words to influence the translation of other nearby words. However, this makes the decoding problem much more complicated.
 
-One way to accomplish language model integration is by running the Viterbi algorithm on a carefully crafted graph structure described below.
+One way to accomplish language model integration is by running the Viterbi algorithm (or any shortest path algorithm of your choosing) on a carefully crafted graph structure described below.
 Each state in the graph is labeled by a tuple $(i, c)$, where $i$ is the number of words translated so far and $c$ is the state of the language model, and itself
 a tuple representing the last (up to) two words of the English translation. The initial state is thus $(0, (\text{&quot;&lt;s&gt;&quot;}))$.
 
@@ -64,8 +64,8 @@ a tuple representing the last (up to) two words of the English translation. The 
 </figure>
 
 Edges are added by looking up each source word $s_i$ ($i \in \[0, N\]$ where $N$ is the number of words in the source sentence) in the translation table.
-For each translation $e_j$ add an arc from each state $(i, c)$ to $(i + 1, c')$, where $c'$ is the last two words of the string $c$ concatenated with $e_j$. Note that $e_j$
-may be more than one word! The weight of each arc will be the sum of log probability from the translation model and the log probability from the language model.
+For each translation $e_j$ of $s_i$ add an arc from each state $(i, c)$ to $(i + 1, c')$, where $c'$ is the last two words of the string $c$ concatenated with $e_j$. Note that while we assume at this stage that we will be translating one word at a time, $e_j$
+may consist of more than one word! The weight of each arc will be the sum of log probability from the translation model and the log probability from the language model.
 
 <figure>
 <img src="probs.png" alt="Computation of edge weights" width="70%" height="70%" />
